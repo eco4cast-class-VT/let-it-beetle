@@ -30,28 +30,25 @@ model {
 ",file = ss_univariate)
 
 # GET SITE NAMES
-site_names <- unique(beetles_target$siteID)
+#site_names <- c(unique(beetles_target$siteID))
 
 # FORECAST HORIZON (weekly for 20 months == 80 weeks (right?))
-
-
-for(s in 1:length(site_names)){
   
   # Select site
   site_data_var <- beetles_target %>%
-    filter(siteID == site_names[s])
-    #filter(siteID == "SRER")
+    #filter(siteID == site_names[s])
+    filter(siteID == "ORNL")
   
   observed_weeks <- as.data.frame(seq(as.Date("2013-07-01"), Sys.Date(), by = "weeks"))%>%
     rename(time = `seq(as.Date("2013-07-01"), Sys.Date(), by = "weeks")`)
     
   observed_weeks_44cast <- left_join(observed_weeks, site_data_var, by = "time")%>%
-    mutate(siteID = site_names[s])
-    #mutate(siteID = "SRER")
+    #mutate(siteID = site_names[s])
+    mutate(siteID == "ORNL")
   
   forecast_weeks <- as.data.frame(seq(max(observed_weeks_44cast$time), Sys.Date()+560, by = "weeks"))%>%
     rename(time = `seq(max(observed_weeks_44cast$time), Sys.Date() + 560, by = \"weeks\")`)%>%
-    mutate(siteID = site_names[s],
+    mutate(siteID = "ORNL",
            abundance = NA,
            richness = NA)
   
@@ -59,7 +56,7 @@ for(s in 1:length(site_names)){
   
   jags.data = list(Y = forecast_timeline$richness, N = nrow(forecast_timeline))
 
-  jags.params = c("sd.q", "sd.r", "predY", "mu")
+  jags.params = c("predY", "mu")
 
   nchain = 5
   chain_seeds <- c(200,800,1400)
@@ -82,28 +79,37 @@ for(s in 1:length(site_names)){
     select(time, predY, ensemble)%>%
     group_by(time) %>% 
     summarise(mean = mean(predY),
-              upper_90 = quantile(predY, 0.90),
-              lower_90 = quantile(predY, 0.10),
-              upper_80 = quantile(predY, 0.80),
-              lower_80 = quantile(predY, 0.20),
-              upper_70 = quantile(predY, 0.70),
-              lower_70 = quantile(predY, 0.30),
-              upper_60 = quantile(predY, 0.60),
-              lower_60 = quantile(predY, 0.40),
+              upper_95 = quantile(predY, 0.90),
+              lower_95 = quantile(predY, 0.10),
               var = var(predY),
-              sd = sd(predY),.groups = "drop")
+              sd = sd(predY),.groups = "drop")%>%
+    mutate(lower_95 = ifelse(lower_95<=0,0.01,lower_95))
+  
+  current_forecast <- jags.out %>%
+    spread_draws(predY[week]) %>%
+    filter(.chain == 1) %>%
+    rename(ensemble = .iteration) %>%
+    mutate(time = forecast_timeline$time[week]) %>%
+    ungroup() %>%
+    select(time, predY, ensemble)%>%
+    group_by(time) %>% 
+    summarise(mean = mean(predY),
+              upper_95 = quantile(predY, 0.90),
+              lower_95 = quantile(predY, 0.10),
+              var = var(predY),
+              sd = sd(predY),.groups = "drop")%>%
+    mutate(lower_95 = ifelse(lower_95<=0,0.01,lower_95))%>%
+    filter(time >= Sys.Date())
   
   ggplot(richness_forecast, aes(x = time, y = mean))+
-    geom_ribbon(aes(ymin = lower_90, ymax = upper_90), alpha = 0.2, fill = "midnightblue") +
-    geom_ribbon(aes(ymin = lower_80, ymax = upper_80), alpha = 0.2, fill = "midnightblue") +
-    geom_ribbon(aes(ymin = lower_70, ymax = upper_70), alpha = 0.2, fill = "midnightblue") +
-    geom_ribbon(aes(ymin = lower_60, ymax = upper_60), alpha = 0.2, fill = "midnightblue") +
+    geom_ribbon(aes(ymin = lower_95, ymax = upper_95), alpha = 0.2, fill = "midnightblue") +
     geom_line(color = "black")+
     geom_point(data = forecast_timeline, aes(x = time, y = richness), color = "red") +
-    labs(title = site_names[s])+
+    labs(title = "ORNL")+
+    theme_bw()+
     geom_vline(xintercept = Sys.Date())+
     labs(x = "Date", y = "Beetle Richness")
   
-  ggsave(paste0("beetle_richness_",site_names[s],"_figure.pdf"), device = "pdf")
+  ggsave(paste0("beetle_richness_ORNL_",Sys.Date(),"_figure.pdf"), device = "pdf")
   
-  }
+
