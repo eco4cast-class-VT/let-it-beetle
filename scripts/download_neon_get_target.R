@@ -2,14 +2,14 @@
 if (!require('pacman')) install.packages('pacman'); library('pacman')
 pacman::p_load(tidyverse, ISOweek, neonstore)
 
-source("./resolve_taxonomy.R")
+source("./scripts/resolve_taxonomy.R")
 
-neonstore::neon_dir()
-Sys.setenv("NEONSTORE_HOME" = "/groups/rqthomas_lab/neonstore")
-Sys.setenv("NEONSTORE_DB" = "/groups/rqthomas_lab/neonstore")
-
-neonstore::neon_download(product="DP1.10022.001")
-neonstore::neon_store(product="DP1.10022.001")
+# neonstore::neon_dir()
+# Sys.setenv("NEONSTORE_HOME" = "/groups/rqthomas_lab/neonstore")
+# Sys.setenv("NEONSTORE_DB" = "/groups/rqthomas_lab/neonstore")
+# 
+# neonstore::neon_download(product="DP1.10022.001")
+# neonstore::neon_store(product="DP1.10022.001")
 
 
 ## Load data from raw files
