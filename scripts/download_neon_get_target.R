@@ -5,8 +5,8 @@ pacman::p_load(tidyverse, ISOweek, neonstore)
 source("./scripts/resolve_taxonomy.R")
 
 # neonstore::neon_dir()
-# Sys.setenv("NEONSTORE_HOME" = "/groups/rqthomas_lab/neonstore")
-# Sys.setenv("NEONSTORE_DB" = "/groups/rqthomas_lab/neonstore")
+Sys.setenv("NEONSTORE_HOME" = "/Users/ryanmcclure/Documents/let-it-beetle/neonstore")
+Sys.setenv("NEONSTORE_DB" = "/Users/ryanmcclure/Documents/let-it-beetle/neonstore")
 # 
 # neonstore::neon_download(product="DP1.10022.001")
 # neonstore::neon_store(product="DP1.10022.001")
